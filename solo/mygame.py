@@ -1,20 +1,20 @@
 # necessary imports
-import pygame
+import pygame as pg
 
-# pygame off the line
-pygame.init()
+# pg off the line
+pg.init()
 
 # the starting gun is loaded
 def play():
 
-	# pygame_created_screen off the line
-	screen = pygame.display.set_mode((1000, 420))
+	# pg_created_screen off the line with x_size and y_size
+	screen = pg.display.set_mode((1000, 420))
 
 	# this is a real grown-up game honey, I think it's time it was given a real refresh rate
-	clock = pygame.time.Clock()
+	clock = pg.time.Clock()
 
 	# bring in player image
-	player_image = pygame.image.load('player.png')
+	player_image = pg.image.load('player.png')
 	player_x = 90
 	player_y = 300
 
@@ -25,14 +25,14 @@ def play():
 		clock.tick(30)
 
 		# input listener
-		key = pygame.key.get_pressed()
-		if key[pygame.K_LEFT]:
+		key = pg.key.get_pressed()
+		if key[pg.K_LEFT]:
 			player_x -= 10
-		if key[pygame.K_RIGHT]:
+		if key[pg.K_RIGHT]:
 			player_x += 10
-		if key[pygame.K_UP]:
+		if key[pg.K_UP]:
 			player_y -= 20
-		if key[pygame.K_DOWN]:
+		if key[pg.K_DOWN]:
 			player_y += 10
 
 		# gravity mechanics	
@@ -40,10 +40,10 @@ def play():
 			player_y += 10
 
 		# quit mechanics	
-		for event in pygame.event.get(): # the super listener
-			if event.type == pygame.QUIT: # if the red button is pushed
+		for event in pg.event.get(): # the super listener
+			if event.type == pg.QUIT: # if the red button is pushed
 				return # bail
-			if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE: # if ESC is pressed
+			if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE: # if ESC is pressed
 				return # bail
 
 		# fill screen with a nice white... light..... so.... pretty.... 
@@ -53,7 +53,7 @@ def play():
 		screen.blit(player_image, (player_x, player_y))
 
 		# let it snow, let it snow, let it snow
-		pygame.display.flip()
+		pg.display.flip()
 
 # the starting gun
 play()
