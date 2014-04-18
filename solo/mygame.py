@@ -23,47 +23,49 @@ class Floor:
 		self.width = width
 		self.height = height
 		
-
 # the starting gun is loaded
 def play():
 	screen_width = 1000
 	screen_height = 420
 	red = (255,0,0)
-	green = (0,255,0)
 	blue = (0,0,255)
 	white = (255,255,255)
-	black = (0,0,0)
 	player_x = 90
 	player_y = 100
+	player_width = 10
 	player_height = 40
 	all_floors = []
-	
-	clock = pg.time.Clock()
+
 	player_image = pg.image.load('player.png')
 	background_image = pg.image.load('bg.png')
 
 	screen = pg.display.set_mode((screen_width, screen_height))
+	clock = pg.time.Clock()
 
 	while True:
+		#fps
 		clock.tick(48)
 		
+		# jump
 		key = pg.key.get_pressed()
 		if key[pg.K_SPACE]:
 			player_y -= 5
-			
-		collide = False;
-			
+
+		# gravity
+		collide_x = False;
+		collide_y = False;
 		for floor in all_floors:
 			if (floor.x < player_x < floor.x + floor.width):
 				if player_y < floor.y - player_height:
-					collide = False;
+					collide_y = False;
 				if player_y >= floor.y - player_height:
-					collide = True;
-					
-		if not collide:
+					collide_y = True;
+			if (player_y > floor.y - player_height) and (player_x + player_width < floor.x):
+				player_x
+		if not collide_y:
 			player_y += 3
 			
-
+		# floor logic	
 		if all_floors == []:
 			all_floors.append(Floor(0, 340, 805, 300))
 		else:
@@ -73,22 +75,22 @@ def play():
 				if floor.x + floor.width <= 0:
 					all_floors.remove(floor)
 
-		screen.fill(white)
-
-		pg.draw.rect(screen, blue, (player_x, player_y, 10, player_height))
-
+		# draw background, floors, and player
+		screen.blit(background_image, (0,0))
+		pg.draw.rect(screen, blue, (player_x, player_y, player_width, player_height))
 		for floor in all_floors:
 			floor.x -= 5
-			pg.draw.rect(screen, red, (floor.x, floor.y, floor.width, floor.height))
+			pg.draw.rect(screen, white, (floor.x, floor.y, floor.width, floor.height))
 		
+		# update
 		pg.display.update()
 		
+		# quit
 		for event in pg.event.get():
 			if event.type == pg.QUIT:
 				return
 			if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
 				return 
-				
 		if player_y == screen_height:
 			return
 
