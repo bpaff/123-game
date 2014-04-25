@@ -1,7 +1,7 @@
 # BY SAHAND NAYEBAZIZ
 # UCI SPRING 2014
 #
-#
+# main/subroutine structure adapted from T. Debeauvais INF 123 class material
 
 from random import randint
 import pygame as pg
