@@ -163,8 +163,10 @@ def update_score(frames_traveled):
 ##############################################################
 
 pg.init()
-myfont = pg.font.SysFont("range", 19)
+myfont = pg.font.SysFont("range", 21)
 clock = pg.time.Clock()
+
+##############################################################
 
 # display
 dimx = 480
