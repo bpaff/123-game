@@ -7,6 +7,7 @@ from random import randint
 import pygame as pg
 
 
+
 ############################################################
 
 def process_input():
@@ -33,7 +34,11 @@ def draw_everything(screen, player, floors, score):
     for key in floors:
     	pg.draw.rect(screen, (90, 90, 90), (key, floors[key][0], floors[key][1], 600))
 
-    print(score / 50)
+    score = score / 50
+
+    score_color = (255, 255, 255)
+    label = myfont.render(str(score), 1, (255,255,255))
+    screen.blit(label, (dimx - 20, dimy - (dimy - 10)))
     
     pg.display.update()
 
@@ -158,6 +163,7 @@ def update_score(frames_traveled):
 ##############################################################
 
 pg.init()
+myfont = pg.font.SysFont("range", 19)
 clock = pg.time.Clock()
 
 # display
