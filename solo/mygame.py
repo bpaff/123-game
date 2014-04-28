@@ -116,9 +116,8 @@ def move_floors(floors, motion):
 
 ##############################################################
 
-def add_floor(floors, floor_needed):
-	if floor_needed:
-		floors[480] = (randint(90, 160), randint(100, 600))
+def add_floor(floors):
+	floors[480] = (randint(90, 160), randint(100, 600))
 	return floors
 
 ##############################################################
@@ -140,12 +139,21 @@ def update_motion(motion):
 
 ##############################################################
 
+def check_death(player):
+	if player['x'] + player['width'] < 0:
+		return True
+	if player['y'] > dimy:
+		return True
+	else:
+		return False
+
 pg.init()
 clock = pg.time.Clock()
 
 # display
-dims = 480, 160
-screen = pg.display.set_mode(dims)
+dimx = 480
+dimy = 160
+screen = pg.display.set_mode((dimx, dimy))
 
 # game objects
 player = create_player()
@@ -162,10 +170,17 @@ while game_status:
 	game_status, jump = process_input()
 	
 	floors, floor_needed = move_floors(floors, motion)
-	floors = add_floor(floors, floor_needed)
+	if floor_needed:
+		floors = add_floor(floors)
 	player, jump_start, jump_time, falling = move_player(player, jump, jump_start, jump_time, floors, falling)
 
 	draw_everything(screen, player, floors)
 	update_motion(motion)
+
+	if check_death(player):
+		game_status = 0
     
 	clock.tick(50)  # or sleep(.02) to have the loop pg-independent
+
+
+
