@@ -25,13 +25,15 @@ def process_input():
 
 ############################################################
 
-def draw_everything(screen, player, floors):
+def draw_everything(screen, player, floors, score):
     screen.fill((32, 32, 32))
 
     pg.draw.rect(screen, (255, 255, 255), (player['x'], player['y'], player['width'], player['height']))
 
     for key in floors:
     	pg.draw.rect(screen, (90, 90, 90), (key, floors[key][0], floors[key][1], 600))
+
+    print(score / 50)
     
     pg.display.update()
 
@@ -114,19 +116,19 @@ def move_floors(floors, motion):
 
 	return floors_new, floor_needed
 
-##############################################################
+############################################################
 
 def add_floor(floors):
-	floors[480] = (randint(90, 160), randint(100, 600))
+	floors[480] = (randint(90, 154), randint(100, 800))
 	return floors
 
-##############################################################
+############################################################
 
 def create_motion():
-	motion = {'counter': 25, 'vel': 1.9, 'acc': 0.2}
+	motion = {'counter': 25, 'vel': 2.0, 'acc': 0.1}
 	return motion
 
-##############################################################
+############################################################
 
 def update_motion(motion):
 	if motion['counter'] == 0:
@@ -147,6 +149,14 @@ def check_death(player):
 	else:
 		return False
 
+##############################################################
+
+def update_score(frames_traveled):
+	frames_traveled += 1
+	return (frames_traveled)
+
+##############################################################
+
 pg.init()
 clock = pg.time.Clock()
 
@@ -159,6 +169,9 @@ screen = pg.display.set_mode((dimx, dimy))
 player = create_player()
 floors = create_floors()
 motion = create_motion()
+
+# game stats
+frames_traveled = 0
 
 # game loop
 game_status = 1  # 0 for game over, 1 for play
@@ -174,11 +187,12 @@ while game_status:
 		floors = add_floor(floors)
 	player, jump_start, jump_time, falling = move_player(player, jump, jump_start, jump_time, floors, falling)
 
-	draw_everything(screen, player, floors)
-	update_motion(motion)
-
+	draw_everything(screen, player, floors, frames_traveled)
 	if check_death(player):
 		game_status = 0
+
+	update_motion(motion)
+	frames_traveled = update_score(frames_traveled)
     
 	clock.tick(50)  # or sleep(.02) to have the loop pg-independent
 
