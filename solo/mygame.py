@@ -6,8 +6,6 @@
 from random import randint
 import pygame as pg
 
-
-
 ############################################################
 
 def process_input():
@@ -90,10 +88,11 @@ def move_player(player, jump, jump_start, jump_time, floors, falling):
 	for key in floors:
 		player_rect_collide = pg.Rect(key, floors[key][0], floors[key][1], 600).colliderect(pg.Rect(player['x'], player['y'], player['width'], player['height']))
 		if player_rect_collide:
-			if player['x'] > key:
-				player['y'] = floors[key][0] - player['height']
-			elif (player['y'] + player['height']) >= floors[key][0]:
-				player['x'] = key - player['width']
+				if player['x'] > key and player['y'] + (player['height']/3) < floors[key][0]:
+					player['y'] = floors[key][0] - player['height']
+				elif (player['y'] + player['height']) >= floors[key][0]:
+					player['x'] = key - player['width']
+				
 
 
 	return player, jump_start, jump_time, falling
@@ -130,7 +129,7 @@ def add_floor(floors):
 ############################################################
 
 def create_motion():
-	motion = {'counter': 25, 'vel': 2.0, 'acc': 0.1}
+	motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
 	return motion
 
 ############################################################
@@ -163,10 +162,8 @@ def update_score(frames_traveled):
 ##############################################################
 
 pg.init()
-myfont = pg.font.SysFont("range", 21)
 clock = pg.time.Clock()
-
-##############################################################
+myfont = pg.font.SysFont("range", 21)
 
 # display
 dimx = 480
@@ -190,16 +187,18 @@ while game_status:
 
 	game_status, jump = process_input()
 	
+	
 	floors, floor_needed = move_floors(floors, motion)
 	if floor_needed:
 		floors = add_floor(floors)
 	player, jump_start, jump_time, falling = move_player(player, jump, jump_start, jump_time, floors, falling)
+	
 
 	draw_everything(screen, player, floors, frames_traveled)
 	if check_death(player):
 		game_status = 0
 
-	update_motion(motion)
+	motion = update_motion(motion)
 	frames_traveled = update_score(frames_traveled)
     
 	clock.tick(50)  # or sleep(.02) to have the loop pg-independent
