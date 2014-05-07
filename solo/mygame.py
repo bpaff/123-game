@@ -10,31 +10,31 @@ import pygame as pg
 
 def process_input():
 	game_status = 1
-	jump = 0
+	jumping = 0
 	for event in pg.event.get():
 		if event.type == pg.QUIT:
 			game_status = 0 # 0 for game over, 1 for play
 	key = pg.key.get_pressed()
 	if key[pg.K_UP]:
-		jump = 1
+		jumping = 1
 	elif key[pg.K_ESCAPE]:
 		game_status = 0
 
-	return game_status, jump
+	return game_status, jumping
 
 ############################################################
 
-def draw_everything(screen, player, floors, score):
+def draw_everything(screen, player, floors, score, cameray):
     screen.fill((32, 32, 32))
 
-    pg.draw.rect(screen, (255, 255, 255), (player['x'], player['y'], player['width'], player['height']))
+    pg.draw.rect(screen, (255, 255, 255), (player['x'], player['y'] - cameray, player['width'], player['height']))
 
     for key in floors:
-    	pg.draw.rect(screen, (90, 90, 90), (key, floors[key][0], floors[key][1], 600))
+    	pg.draw.rect(screen, (90, 90, 90), (key, floors[key][0] - cameray, floors[key][1], 600))
 
-    score = score / 50
-
+    
     score_color = (255, 255, 255)
+    score = score / 50
     label = myfont.render(str(score), 1, (255,255,255))
     screen.blit(label, (dimx - 20, dimy - (dimy - 10)))
     
@@ -48,18 +48,17 @@ def create_player():
 
 ############################################################
 
-def move_player(player, jump, jump_start, jump_time, floors, falling):
+def move_player(player, jumping, jump_start, jump_time, floors, falling):
 	if falling:
-		jump = False
+		jumping = False
 
-	if not jump:
+	if not jumping:
 		falling = True
-		jump_start = 0
-		jump_time = 0
+		jump_start, jump_time = 0, 0
 		player['y'] += 4
 
 	if not falling:
-		if jump:
+		if jumping:
 			if jump_time == 0:
 				jump_start = pg.time.get_ticks() + 1
 				player['y'] -= 10
@@ -161,6 +160,12 @@ def update_score(frames_traveled):
 
 ##############################################################
 
+def update_camera(cameray, player):
+	if player['y'] < 30:
+		print(cameray)
+		cameray = player['y'] - 30
+	return cameray
+
 pg.init()
 clock = pg.time.Clock()
 myfont = pg.font.SysFont("range", 21)
@@ -169,6 +174,7 @@ myfont = pg.font.SysFont("range", 21)
 dimx = 480
 dimy = 160
 screen = pg.display.set_mode((dimx, dimy))
+cameray = 0
 
 # game objects
 player = create_player()
@@ -185,16 +191,16 @@ jump_time = 0
 falling = False
 while game_status:
 
-	game_status, jump = process_input()
+	game_status, jumping = process_input()
 	
 	
 	floors, floor_needed = move_floors(floors, motion)
 	if floor_needed:
 		floors = add_floor(floors)
-	player, jump_start, jump_time, falling = move_player(player, jump, jump_start, jump_time, floors, falling)
+	player, jump_start, jump_time, falling = move_player(player, jumping, jump_start, jump_time, floors, falling)
+	cameray = update_camera(cameray, player)
 	
-
-	draw_everything(screen, player, floors, frames_traveled)
+	draw_everything(screen, player, floors, frames_traveled, cameray)
 	if check_death(player):
 		game_status = 0
 
