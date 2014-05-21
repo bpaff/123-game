@@ -3,12 +3,17 @@
 #
 # mvc structure adapted from T. Debeauvais INF 123 class material
 
-from random import randint
 import pygame as pg
+from random import randint
+from network import Handler, poll
+from player import *
+
+pg.init()
 
 class Model():
 	def __init__(self):
 		self.player = {'x': 60, 'y': 40, 'width': 7, 'height': 30}
+		self.other_players = []
 		self.floors = {0: (100, 420)} # the key is the x-coord, value[0] is the y-coord, and value[1] is the width
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
 		self.dash = {'game_status': 1, 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0} # "dashboard" containing all stats
@@ -16,7 +21,6 @@ class Model():
 class View():
 	def __init__(self, model):
 		self.m = model
-		pg.init()
 		self.dims = {'x': 480, 'y': 160}
 		self.camera = {'y': 0}
 		self.screen = pg.display.set_mode((self.dims['x'], self.dims['y']))
@@ -40,8 +44,10 @@ class View():
 class Controller():
 	def __init__(self, m):
 		self.m = m
-		pg.init()
 
+	def add_player(self, id):
+		self.m.players.append(Player(id));
+		
 	def process_input(self):
 		self.m.dash['game_status'] = 1
 		self.m.dash['jumping'] = 0
@@ -114,22 +120,50 @@ class Controller():
 	def turn_world(self):
 		if self.m.motion['counter'] == 0:
 			self.m.motion['vel'] = self.m.motion['vel'] + self.m.motion['acc']
-			print[self.m.motion['vel']]
 			self.m.motion['counter'] = 25
 		else:
 			self.m.motion['counter'] -= 1
+
+class NetworkController(Handler):
+
+	def set_model(self, m):
+		self.m = m
+
+	def on_msg(self, data):
+		for key in data:
+			if str(key) == 'x':
+				self.m.player['x'] = data[key]
+			if str(key) == 'y':
+				self.m.player['y'] = data[key]
+
+	def on_open(self):
+		print('*** connected to the server ***')
+
+	def on_close(self):
+		print('*** disconnected from the server ***')
+
+	def send_location(self):
+		self.do_send({'y': self.m.player['y'], 'x': self.m.player['x']})
+
+	def poll_server(self):
+		poll()
+		
 
 ############# LOOP #############
 
 model = Model()
 c = Controller(model)
+n = NetworkController('localhost', 8888)
+n.set_model(model)
 v = View(model)
 clock = pg.time.Clock()
 
 while model.dash['game_status']:
+	n.poll_server()
 	c.process_input()
 	c.move_floors()
 	c.move_player()
+	n.send_location()
 	v.display()
 	c.turn_world()
 	clock.tick(50)
