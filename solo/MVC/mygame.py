@@ -19,7 +19,7 @@ class Model():
 		self.dash = {'game_status': 'menu', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': self.dash['menu_selection'], 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
 	def reset_playing(self):
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
-		self.floors = {0: (120, 600)}
+		self.floors = {0: (120, 900)}
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
 		self.dash = {'game_status': 'single', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
 
@@ -33,7 +33,8 @@ class View():
 	def display(self):
 		# am I dead?
 		if self.m.player['x'] + self.m.player['width'] < 0 or self.m.player['y'] > self.dims['y']:
-			self.m.dash['game_status'] = 0
+			self.freeze()
+			self.m.dash['game_status'] = 'menu'
 		if self.m.player['y'] < 30:
 			self.camera['y'] = self.m.player['y'] - 30
 		screen = self.screen
@@ -41,8 +42,53 @@ class View():
 		pg.draw.rect(screen, (255, 255, 255), (self.m.player['x'], self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
 		for key in self.m.floors:
 			pg.draw.rect(screen, (90, 90, 90), (key, self.m.floors[key][0] - self.camera['y'], self.m.floors[key][1], 600))
+		
+		if self.m.dash['frames_traveled'] > 20 and self.m.dash['frames_traveled'] < 190:
+			if pg.font:
+			    font = pg.font.Font(None, 80)
+			    title = font.render(str(self.m.dash['high_score']), 50, (255, 255, 255))
+			    screen.blit(title, (220, 30))
+			    subfont = pg.font.Font(None, 20)
+			    subtitle = subfont.render('HIGH SCORE', 50, (255, 255, 255))
+			    screen.blit(subtitle, (195, 85))
+
+		if self.m.dash['frames_traveled'] >= 150:
+			if pg.font:
+				font = pg.font.Font(None, 18)
+				score = font.render("score: " + str(self.m.dash['current_score']), 50, (80, 80, 80))
+				screen.blit(score, (420, 10))
+
 		pg.display.update()
 		self.m.dash['frames_traveled'] += 1
+		self.m.dash['current_score'] = (self.m.dash['frames_traveled'] - 100) / 150
+
+	def freeze(self):
+		screen = self.screen
+		current_time = self.m.dash['frames_traveled']
+		high_score = self.m.dash['current_score'] >= self.m.dash['high_score']
+		while self.m.dash['frames_traveled'] - current_time < 190:
+			screen.fill((32, 32, 32))
+			for key in self.m.floors:
+				pg.draw.rect(screen, (50, 50, 50), (key, self.m.floors[key][0] - self.camera['y'], self.m.floors[key][1], 600))
+			if high_score:
+				self.m.dash['high_score'] = self.m.dash['current_score']
+				if pg.font:
+				    font = pg.font.Font(None, 80)
+				    title = font.render(str(self.m.dash['high_score']), 50, (255, 255, 255))
+				    screen.blit(title, (220, 30))
+				    subfont = pg.font.Font(None, 20)
+				    subtitle = subfont.render('HIGH SCORE!!!', 50, (255, 255, 255))
+				    screen.blit(subtitle, (185, 90))
+			else:
+				if pg.font:
+				    font = pg.font.Font(None, 80)
+				    title = font.render(str(self.m.dash['high_score']), 50, (255, 255, 255))
+				    screen.blit(title, (220, 30))
+				    subfont = pg.font.Font(None, 20)
+				    subtitle = subfont.render('same high score :(', 50, (255, 255, 255))
+				    screen.blit(subtitle, (180, 90))
+			pg.display.update()
+			self.m.dash['frames_traveled'] += 1
 
 	def display_menu(self):
 		# am I dead?
@@ -67,7 +113,7 @@ class View():
 		    play = subfont.render("single player", 50, colors[0])
 		    screen.blit(play, (200, 70))
 		    quit = subfont.render("play with friends", 50, colors[1])
-		    screen.blit(quit, (330, 70))
+		    screen.blit(quit, (320, 70))
 		pg.display.update()
 
 class Controller():
@@ -159,6 +205,7 @@ class Controller():
 			self.m.floors = floors_new
 		if needing_floor:
 			self.m.floors[480] = (randint(90, 154), randint(100, 800))
+			self.m.dash['frames_traveled'] += 50
 
 	def turn_world(self):
 		if self.m.motion['counter'] == 0:
