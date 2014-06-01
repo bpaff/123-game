@@ -45,16 +45,17 @@ class View():
 		
 		if self.m.dash['frames_traveled'] > 20 and self.m.dash['frames_traveled'] < 190:
 			if pg.font:
-			    font = pg.font.Font(None, 80)
+
+			    font = pg.font.Font('range.ttf', 40)
 			    title = font.render(str(self.m.dash['high_score']), 50, (255, 255, 255))
 			    screen.blit(title, (220, 30))
-			    subfont = pg.font.Font(None, 20)
-			    subtitle = subfont.render('HIGH SCORE', 50, (255, 255, 255))
-			    screen.blit(subtitle, (195, 85))
+			    subfont = pg.font.Font('range.ttf', 20)
+			    subtitle = subfont.render('HIGH SCORE', 50, (100, 100, 100))
+			    screen.blit(subtitle, (165, 70))
 
 		if self.m.dash['frames_traveled'] >= 150:
 			if pg.font:
-				font = pg.font.Font(None, 18)
+				font = pg.font.Font('range.ttf', 12)
 				score = font.render("score: " + str(self.m.dash['current_score']), 50, (80, 80, 80))
 				screen.blit(score, (420, 10))
 
@@ -65,7 +66,7 @@ class View():
 	def freeze(self):
 		screen = self.screen
 		current_time = self.m.dash['frames_traveled']
-		high_score = self.m.dash['current_score'] >= self.m.dash['high_score']
+		high_score = self.m.dash['current_score'] > self.m.dash['high_score']
 		while self.m.dash['frames_traveled'] - current_time < 190:
 			screen.fill((32, 32, 32))
 			for key in self.m.floors:
@@ -73,20 +74,20 @@ class View():
 			if high_score:
 				self.m.dash['high_score'] = self.m.dash['current_score']
 				if pg.font:
-				    font = pg.font.Font(None, 80)
+				    font = pg.font.Font('range.ttf', 40)
 				    title = font.render(str(self.m.dash['high_score']), 50, (255, 255, 255))
 				    screen.blit(title, (220, 30))
-				    subfont = pg.font.Font(None, 20)
-				    subtitle = subfont.render('HIGH SCORE!!!', 50, (255, 255, 255))
-				    screen.blit(subtitle, (185, 90))
+				    subfont = pg.font.Font('range.ttf', 20)
+				    subtitle = subfont.render('HIGH SCORE!!!', 50, (100, 100, 100))
+				    screen.blit(subtitle, (165, 70))
 			else:
 				if pg.font:
-				    font = pg.font.Font(None, 80)
+				    font = pg.font.Font('range.ttf', 40)
 				    title = font.render(str(self.m.dash['high_score']), 50, (255, 255, 255))
 				    screen.blit(title, (220, 30))
-				    subfont = pg.font.Font(None, 20)
-				    subtitle = subfont.render('same high score :(', 50, (255, 255, 255))
-				    screen.blit(subtitle, (180, 90))
+				    subfont = pg.font.Font('range.ttf', 20)
+				    subtitle = subfont.render('Meh.', 50, (100,100,100))
+				    screen.blit(subtitle, (210, 70))
 			pg.display.update()
 			self.m.dash['frames_traveled'] += 1
 
@@ -105,15 +106,21 @@ class View():
 			colors = ((102, 202, 204), (120, 120, 120))
 		else:
 			colors = ((120, 120, 120), (102, 202, 204))
+		
+		
+
 		if pg.font:
-		    font = pg.font.Font(None, 33)
-		    subfont = pg.font.Font(None, 24)
-		    title = font.render("Cave Run. Can you escape?", 50, (255, 255, 255))
-		    screen.blit(title, (170, 30))
-		    play = subfont.render("single player", 50, colors[0])
-		    screen.blit(play, (200, 70))
-		    quit = subfont.render("play with friends", 50, colors[1])
-		    screen.blit(quit, (320, 70))
+		    big_font = pg.font.Font('range.ttf', 26)
+		    little_font = pg.font.Font('range.ttf', 12)
+
+		    title = big_font.render("Cave Run.", 1, (255, 255, 255))
+		    play = little_font.render("run alone", 1, colors[0])   
+		    quit = little_font.render("run with friends", 1, colors[1])
+
+		    screen.blit(title, (330, 40))
+		    screen.blit(play, (280, 75))
+		    screen.blit(quit, (355, 75))
+
 		pg.display.update()
 
 class Controller():
@@ -216,6 +223,7 @@ class Controller():
 
 ############# LOOP #############
 pg.init()
+pg.font.init()
 model = Model()
 c = Controller(model)
 v = View(model)
