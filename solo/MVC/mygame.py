@@ -3,20 +3,15 @@
 #
 # mvc structure adapted from T. Debeauvais INF 123 class material
 
-import pygame as pg
 from random import randint
-from network import Handler, poll
-from player import *
-
-pg.init()
+import pygame as pg
 
 class Model():
 	def __init__(self):
 		self.player = {'x': 60, 'y': 40, 'width': 7, 'height': 30}
-		self.other_players = []
-		self.floors = {0: (100, 420)} # the key is the x-coord, value[0] is the y-coord, and value[1] is the width
+		self.floors = {0: (120, 900)} # the key is the x-coord, value[0] is the y-coord, and value[1] is the width
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 1, 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0} # "dashboard" containing all stats
+		self.dash = {'game_status': 'menu', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0} # "dashboard" containing all stats
 
 class View():
 	def __init__(self, model):
@@ -38,27 +33,82 @@ class View():
 		pg.draw.rect(screen, (255, 255, 255), (self.m.player['x'], self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
 		for key in self.m.floors:
 			pg.draw.rect(screen, (90, 90, 90), (key, self.m.floors[key][0] - self.camera['y'], self.m.floors[key][1], 600))
+		
+		if pg.font:
+		    font = pg.font.Font(None, 36)
+		    text = font.render("Welcome to Cave Runner", 1, (255, 255, 255))
+		    screen.blit(text, ((screen.get_width()/2), 40))
+
 		pg.display.update()
 		self.m.dash['frames_traveled'] += 1
+
+	def display_menu(self):
+		# am I dead?
+		if self.m.player['x'] + self.m.player['width'] < 0 or self.m.player['y'] > self.dims['y']:
+			self.m.dash['game_status'] = 0
+
+		if self.m.player['y'] < 30:
+			self.camera['y'] = self.m.player['y'] - 30
+
+		screen = self.screen
+		screen.fill((32, 32, 32))
+		pg.draw.rect(screen, (100, 100, 100), (self.m.player['x'], self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
+		for key in self.m.floors:
+			pg.draw.rect(screen, (50, 50, 50), (key, self.m.floors[key][0] - self.camera['y'], self.m.floors[key][1], 600))
+		
+		if self.m.dash['menu_selection'] == 0:
+			colors = ((102, 202, 204), (120, 120, 120))
+		else:
+			colors = ((120, 120, 120), (102, 202, 204))
+
+		if pg.font:
+		    font = pg.font.Font(None, 33)
+		    subfont = pg.font.Font(None, 24)
+
+		    title = font.render("Cave Run. Can you escape?", 50, (255, 255, 255))
+		    screen.blit(title, (170, 30))
+		    play = subfont.render("play", 50, colors[0])
+		    screen.blit(play, (360, 70))
+		    quit = subfont.render("quit", 50, colors[1])
+		    screen.blit(quit, (430, 70))
+
+		pg.display.update()
+		self.m.dash['frames_traveled'] += 1
+
+
+		
 
 class Controller():
 	def __init__(self, m):
 		self.m = m
+		pg.init()
 
-	def add_player(self, id):
-		self.m.players.append(Player(id));
-		
 	def process_input(self):
-		self.m.dash['game_status'] = 1
-		self.m.dash['jumping'] = 0
-		for event in pg.event.get():
-			if event.type == pg.QUIT:
-				self.m.dash['game_status'] = 0 # 0 for game over, 1 for play
-		key = pg.key.get_pressed()
-		if key[pg.K_UP]:
-			self.m.dash['jumping'] = 1
-		elif key[pg.K_ESCAPE]:
-			self.m.dash['game_status'] = 0
+		if self.m.dash['game_status'] == 'menu':
+			self.m.dash['jumping'] = 0
+			for event in pg.event.get():
+				if event.type == pg.QUIT:
+					self.m.dash['game_status'] = 0 # 0 for game over, 1 for play
+			key = pg.key.get_pressed()
+			if key[pg.K_UP]:
+				self.m.dash['jumping'] = 1
+			if key[pg.K_RIGHT]:
+				self.m.dash['menu_selection'] = 1
+			if key[pg.K_LEFT]:
+				self.m.dash['menu_selection'] = 0
+			elif key[pg.K_ESCAPE]:
+				self.m.dash['game_status'] = 0
+
+		elif self.m.dash['game_status'] == 1:
+			self.m.dash['jumping'] = 0
+			for event in pg.event.get():
+				if event.type == pg.QUIT:
+					self.m.dash['game_status'] = 0 # 0 for game over, 1 for play
+			key = pg.key.get_pressed()
+			if key[pg.K_UP]:
+				self.m.dash['jumping'] = 1
+			elif key[pg.K_ESCAPE]:
+				self.m.dash['game_status'] = 0
 
 	def move_player(self):
 		if self.m.dash['falling']:
@@ -106,7 +156,7 @@ class Controller():
 
 		if len(self.m.floors) != 0:
 			for key in self.m.floors:
-				if (key + self.m.floors[key][1] > randint(420, 460)):
+				if (key + self.m.floors[key][1] > randint(380, 460)):
 					needing_floor = False
 			floors_new = {}
 			for key in self.m.floors:
@@ -124,47 +174,23 @@ class Controller():
 		else:
 			self.m.motion['counter'] -= 1
 
-class NetworkController(Handler):
-
-	def set_model(self, m):
-		self.m = m
-
-	def on_msg(self, data):
-		for key in data:
-			if str(key) == 'x':
-				self.m.player['x'] = data[key]
-			if str(key) == 'y':
-				self.m.player['y'] = data[key]
-
-	def on_open(self):
-		print('*** connected to the server ***')
-
-	def on_close(self):
-		print('*** disconnected from the server ***')
-
-	def send_location(self):
-		self.do_send({'y': self.m.player['y'], 'x': self.m.player['x']})
-
-	def poll_server(self):
-		poll()
-		
-
 ############# LOOP #############
-
+pg.init()
 model = Model()
 c = Controller(model)
-n = NetworkController('localhost', 8888)
-n.set_model(model)
 v = View(model)
 clock = pg.time.Clock()
 
-while model.dash['game_status']:
-	n.poll_server()
+# while model.dash['game_status'] = "menu":
+#	c.process_input()
+#	c.menu()
+#	v.display_menu()
+#	clock.tick(50)
+
+while model.dash['game_status'] == 'menu':
 	c.process_input()
 	c.move_floors()
 	c.move_player()
-	n.send_location()
-	v.display()
+	v.display_menu()
 	c.turn_world()
 	clock.tick(50)
-
