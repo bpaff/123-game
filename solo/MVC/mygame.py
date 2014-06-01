@@ -11,17 +11,17 @@ class Model():
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 600)} # the key is the x-coord, value[0] is the y-coord, and value[1] is the width
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'menu', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0} # "dashboard" containing all stats
+		self.dash = {'game_status': 'menu', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': 0, 'current_score': 0} # "dashboard" containing all stats
 	def reset_menu(self):
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 600)}
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'menu', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': self.dash['menu_selection']} # "dashboard" containing all stats
+		self.dash = {'game_status': 'menu', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': self.dash['menu_selection'], 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
 	def reset_playing(self):
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 600)}
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'single', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0} # "dashboard" containing all stats
+		self.dash = {'game_status': 'single', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
 
 class View():
 	def __init__(self, model):
@@ -64,24 +64,27 @@ class View():
 		    subfont = pg.font.Font(None, 24)
 		    title = font.render("Cave Run. Can you escape?", 50, (255, 255, 255))
 		    screen.blit(title, (170, 30))
-		    play = subfont.render("play", 50, colors[0])
-		    screen.blit(play, (360, 70))
-		    quit = subfont.render("quit", 50, colors[1])
-		    screen.blit(quit, (430, 70))
+		    play = subfont.render("single player", 50, colors[0])
+		    screen.blit(play, (200, 70))
+		    quit = subfont.render("play with friends", 50, colors[1])
+		    screen.blit(quit, (330, 70))
 		pg.display.update()
 
 class Controller():
+
 	def __init__(self, m):
 		self.m = m
 		pg.init()
+
 	def process_input(self):
+
 		if self.m.dash['game_status'] == 'menu':
 			self.m.dash['jumping'] = 0
 			for event in pg.event.get():
 				if event.type == pg.QUIT:
 					self.m.dash['game_status'] = 0 # 0 for game over, 1 for play
 			key = pg.key.get_pressed()
-			if key[pg.K_UP]:
+			if key[pg.K_UP] or key[pg.K_SPACE]:
 				self.m.dash['jumping'] = 1
 			elif key[pg.K_RIGHT]:
 				self.m.dash['menu_selection'] = 1
@@ -94,16 +97,18 @@ class Controller():
 					self.m.dash['game_status'] = 0
 				if self.m.dash['menu_selection'] == 0:
 					self.m.dash['game_status'] = 'single'
+
 		elif self.m.dash['game_status'] == 'single':
 			self.m.dash['jumping'] = 0
 			for event in pg.event.get():
 				if event.type == pg.QUIT:
-					self.m.dash['game_status'] = 0 # 0 for game over, 1 for play
+					self.m.dash['game_status'] = 0
 			key = pg.key.get_pressed()
-			if key[pg.K_UP]:
+			if key[pg.K_UP] or key[pg.K_SPACE]:
 				self.m.dash['jumping'] = 1
-			elif key[pg.K_ESCAPE]:
-				self.m.dash['game_status'] = 0
+			elif key[pg.K_BACKSPACE]:
+				self.m.dash['game_status'] = 'menu'
+
 	def move_player(self):
 		if self.m.dash['falling']:
 			self.m.dash['jumping'] = False
@@ -141,6 +146,7 @@ class Controller():
 				elif (self.m.player['y'] + self.m.player['height']) >= self.m.floors[key][0]:
 					self.m.player['x'] = key - self.m.player['width']
 					self.m.dash['falling'] = True
+
 	def move_floors(self):
 		needing_floor = True
 		if len(self.m.floors) != 0:
@@ -153,6 +159,7 @@ class Controller():
 			self.m.floors = floors_new
 		if needing_floor:
 			self.m.floors[480] = (randint(90, 154), randint(100, 800))
+
 	def turn_world(self):
 		if self.m.motion['counter'] == 0:
 			self.m.motion['vel'] = self.m.motion['vel'] + self.m.motion['acc']
@@ -167,18 +174,22 @@ c = Controller(model)
 v = View(model)
 clock = pg.time.Clock()
 
-while model.dash['game_status'] == 'menu':
-	c.process_input()
-	c.move_floors()
-	c.move_player()
-	v.display_menu()
-	c.turn_world()
-	clock.tick(50)
-model.reset_playing()
-while model.dash['game_status'] == 'single':
-	c.process_input()
-	c.move_floors()
-	c.move_player()
-	v.display()
-	c.turn_world()
-	clock.tick(50)
+while model.dash['game_status']:
+	while model.dash['game_status'] == 'menu':
+		c.process_input()
+		c.move_floors()
+		c.move_player()
+		v.display_menu()
+		c.turn_world()
+		clock.tick(50)
+	if model.dash['game_status']:
+		model.reset_playing()
+	while model.dash['game_status'] == 'single':
+		c.process_input()
+		c.move_floors()
+		c.move_player()
+		v.display()
+		c.turn_world()
+		clock.tick(50)
+	if model.dash['game_status']:
+		model.reset_menu()
