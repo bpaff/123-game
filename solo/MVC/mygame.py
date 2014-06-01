@@ -204,7 +204,7 @@ class Controller():
 		needing_floor = True
 		if len(self.m.floors) != 0:
 			for key in self.m.floors:
-				if (key + self.m.floors[key][1] > randint(360, 460)):
+				if (key + self.m.floors[key][1] > randint(339, 460)):
 					needing_floor = False
 			floors_new = {}
 			for key in self.m.floors:
