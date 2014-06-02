@@ -5,24 +5,30 @@
 
 from random import randint
 import pygame as pg
+from network import Handler, poll
 
 class Model():
 	def __init__(self):
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 600)} # the key is the x-coord, value[0] is the y-coord, and value[1] is the width
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'menu', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': 0, 'current_score': 0} # "dashboard" containing all stats
+		self.dash = {'game_status': 'menu', 'multi_status': 'init', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': 0, 'current_score': 0} # "dashboard" containing all stats
 	def reset_menu(self):
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 600)}
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'menu', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': self.dash['menu_selection'], 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
-	def reset_playing(self):
+		self.dash = {'game_status': 'menu', 'multi_status': self.dash['multi_status'], 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': self.dash['menu_selection'], 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
+	def reset_single(self):
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 900)}
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'single', 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
-
+		self.dash = {'game_status': 'single', 'multi_status': self.dash['multi_status'], 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
+	def reset_multi(self):
+		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
+		self.floors = {0: (120, 900)}
+		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
+		self.dash = {'game_status': 'multi', 'multi_status': self.dash['multi_status'], 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
+		self.color = (255, 255, 255)
 class View():
 	def __init__(self, model):
 		self.m = model
@@ -49,7 +55,7 @@ class View():
 			    screen.blit(title, (230, 30))
 			    subfont = pg.font.Font('range.ttf', 20)
 			    subtitle = subfont.render('HIGH SCORE', 50, (100, 100, 100))
-			    screen.blit(subtitle, (175, 70))
+			    screen.blit(subtitle, (180, 70))
 		if self.m.dash['frames_traveled'] >= 150:
 			if pg.font:
 				font = pg.font.Font('range.ttf', 12)
@@ -116,6 +122,15 @@ class View():
 			pg.display.update()
 			self.m.dash['frames_traveled'] += 1
 
+	def display_multi(self):
+		if self.m.dash['multi_status'] == 'connected':
+			screen = self.screen
+			screen.fill((32, 32, 32))
+			font = pg.font.Font('range.ttf', 19)
+			message = font.render("Now connected to Server!", 1, (255, 255, 255))
+			screen.blit(message, (96, 66))
+			pg.display.update()
+		
 class Controller():
 
 	def __init__(self, m):
@@ -140,7 +155,7 @@ class Controller():
 				self.m.dash['game_status'] = 0
 			elif key[pg.K_RETURN]:
 				if self.m.dash['menu_selection'] == 1:
-					self.m.dash['game_status'] = 0
+					self.m.dash['game_status'] = 'multi'
 				if self.m.dash['menu_selection'] == 0:
 					self.m.dash['game_status'] = 'single'
 
@@ -153,6 +168,14 @@ class Controller():
 			if key[pg.K_UP] or key[pg.K_SPACE]:
 				self.m.dash['jumping'] = 1
 			elif key[pg.K_BACKSPACE]:
+				self.m.dash['game_status'] = 'menu'
+
+		elif self.m.dash['game_status'] == 'multi':
+			for event in pg.event.get():
+				if event.type == pg.QUIT:
+					self.m.dash['game_status'] = 0
+			key = pg.key.get_pressed()
+			if key[pg.K_BACKSPACE]:
 				self.m.dash['game_status'] = 'menu'
 
 	def move_player(self):
@@ -214,11 +237,38 @@ class Controller():
 		else:
 			self.m.motion['counter'] -= 1
 
+class MyHandler(Handler):
+    
+    def __init__(self, m):
+    	self.m = m
+        host, port = 'localhost', 8899
+        Handler.__init__(self, host, port)
+        
+    def on_close(self):
+        pass
+        
+    def on_msg(self, msg):
+    	print(msg)
+    	if 'news' in msg:
+    		if msg['news'] == 'connected':
+    			print('all satisfied')
+    			self.m.dash['multi_status'] = 'connected'
+            
+    def send_msg(self, txt):
+        self.do_send({'txt': txt})
+        
+    def update(self):
+        poll(0.01)
+        
+    def kill(self):
+        self.close()  # will call on_close
+
 ############# LOOP #############
 pg.init()
 pg.font.init()
 model = Model()
 c = Controller(model)
+n = MyHandler(model) # handler will be initialized here
 v = View(model)
 clock = pg.time.Clock()
 
@@ -229,15 +279,26 @@ while model.dash['game_status']:
 		c.move_player()
 		v.display_menu()
 		c.turn_world()
+		n.update()
 		clock.tick(50)
-	if model.dash['game_status']:
-		model.reset_playing()
-	while model.dash['game_status'] == 'single':
+	if model.dash['game_status'] == 'single':
+		model.reset_single()
+		while model.dash['game_status'] == 'single':
+			c.process_input()
+			c.move_floors()
+			c.move_player()
+			v.display()
+			c.turn_world()
+			clock.tick(50)
+		if model.dash['game_status'] == 'menu':
+			model.reset_menu()
+	if model.dash['game_status'] == 'multi':
 		c.process_input()
-		c.move_floors()
-		c.move_player()
-		v.display()
-		c.turn_world()
-		clock.tick(50)
-	if model.dash['game_status']:
-		model.reset_menu()
+		v.display_multi()
+		n.update()	
+		clock.tick(50)	
+		if model.dash['game_status'] == 'menu':
+			model.reset_menu()
+
+
+
