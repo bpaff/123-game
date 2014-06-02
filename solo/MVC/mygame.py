@@ -189,6 +189,35 @@ class View():
 				self.m.dash['multi_timer'] = 0
 				self.m.dash['multi_status'] = 'menu'
 
+		if self.m.dash['multi_status'] == 'playing_multi':
+			# am I dead?
+			if self.m.player['x'] + self.m.player['width'] < 0 or self.m.player['y'] > self.dims['y']:
+				self.freeze()
+				self.m.dash['game_status'] = 'menu'
+			if self.m.player['y'] < 30:
+				self.camera['y'] = self.m.player['y'] - 30
+			screen = self.screen
+			screen.fill((32, 32, 32))
+			pg.draw.rect(screen, (255, 255, 255), (self.m.player['x'], self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
+			for key in self.m.floors:
+				pg.draw.rect(screen, (90, 90, 90), (key, self.m.floors[key][0] - self.camera['y'], self.m.floors[key][1], 600))
+			if self.m.dash['frames_traveled'] > 20 and self.m.dash['frames_traveled'] < 190:
+				if pg.font:
+				    font = pg.font.Font('range.ttf', 40)
+				    title = font.render(str(self.m.dash['high_score']), 50, (255, 255, 255))
+				    screen.blit(title, (230, 30))
+				    subfont = pg.font.Font('range.ttf', 20)
+				    subtitle = subfont.render('HIGH SCORE', 50, (100, 100, 100))
+				    screen.blit(subtitle, (180, 70))
+			if self.m.dash['frames_traveled'] >= 150:
+				if pg.font:
+					font = pg.font.Font('range.ttf', 12)
+					score = font.render("score: " + str(self.m.dash['current_score']), 50, (80, 80, 80))
+					screen.blit(score, (420, 10))
+			pg.display.update()
+			self.m.dash['frames_traveled'] += 1
+			self.m.dash['current_score'] = (self.m.dash['frames_traveled'] - 100) / 150
+
 
 		
 class Controller():
@@ -255,6 +284,16 @@ class Controller():
 				key = pg.key.get_pressed()
 				if key[pg.K_BACKSPACE]:
 					self.m.dash['game_status'] = 'menu'
+			if self.m.dash['multi_status'] == 'playing_multi':
+				self.m.dash['jumping'] = 0
+				for event in pg.event.get():
+					if event.type == pg.QUIT:
+						self.m.dash['game_status'] = 0
+				key = pg.key.get_pressed()
+				if key[pg.K_UP] or key[pg.K_SPACE]:
+					self.m.dash['jumping'] = 1
+				elif key[pg.K_BACKSPACE]:
+					self.m.dash['game_status'] = 'menu'
 
 
 	def move_player(self):
@@ -320,7 +359,7 @@ class MyHandler(Handler):
     
     def __init__(self, m):
     	self.m = m
-        host, port = 'localhost', 8899
+        host, port = 'localhost', 8888
         Handler.__init__(self, host, port)
         
     def on_close(self):
@@ -329,8 +368,9 @@ class MyHandler(Handler):
     def on_msg(self, msg):
     	if 'news' in msg:
     		if msg['news'] == 'connected':
-    			print('all satisfied')
     			self.m.dash['multi_status'] = 'connected'
+    		if msg['news'] == 'START':
+    			self.m.dash['multi_status'] = 'playing_multi'
     	if 'num_rdy' in msg:
     		self.m.dash['rdy'] = msg['num_rdy']
             
@@ -387,13 +427,20 @@ while model.dash['game_status']:
 				n.update()
 				n.send_msg('rdy')
 				clock.tick(50)
-				print(model.dash['rdy'])
 			elif model.dash['multi_status'] == 'starting':
 				c.process_input()
 				c.move_player()
 				v.display_multi()
 				n.update()
 				n.send_msg('lesgo')
+				clock.tick(50)
+			elif model.dash['multi_status'] == 'playing_multi':
+				c.process_input()
+				c.move_floors()
+				c.move_player()
+				v.display()
+				c.turn_world()
+				n.update()
 				clock.tick(50)
 		if model.dash['game_status'] == 'menu':
 			model.reset_menu()
