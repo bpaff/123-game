@@ -177,7 +177,7 @@ class View():
 				self.m.dash['multi_timer'] = 0
 
 		if self.m.dash['multi_status'] == 'starting':
-			if self.m.dash['multi_timer'] >= 0 and self.m.dash['multi_timer'] < 500:
+			if self.m.dash['multi_timer'] >= 0 and self.m.dash['multi_timer'] < 750:
 				screen = self.screen
 				screen.fill((32, 32, 32))
 				font = pg.font.Font('range.ttf', 19)
@@ -187,7 +187,7 @@ class View():
 				self.m.dash['multi_timer'] += 1
 			else:
 				self.m.dash['multi_timer'] = 0
-				self.m.dash['multi_status'] = 'menu'
+				self.m.dash['game_status'] = 'menu'
 
 		if self.m.dash['multi_status'] == 'playing_multi':
 			# am I dead?
