@@ -27,7 +27,7 @@ class Model():
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 900)}
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'multi', 'multi_status': self.dash['multi_status'], 'multi_timer': 0, 'multi_countdown': 1500, 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
+		self.dash = {'game_status': 'multi', 'multi_status': self.dash['multi_status'], 'multi_timer': 0, 'multi_countdown': 1500, 'rdy': 0, 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
 		self.color = (255, 255, 255)
 class View():
 	def __init__(self, model):
@@ -153,6 +153,8 @@ class View():
 				screen = self.screen
 				screen.fill((32, 32, 32))
 				pg.draw.rect(screen, (100, 100, 100), (self.m.player['x'], self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
+				for x in range(1, (self.m.dash['rdy'])):
+					pg.draw.rect(screen, (100, 150, 100), (((self.m.player['x'] + self.m.player['width'] + (x * self.m.player['width'])) + ((x - 1) * self.m.player['width'])), self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
 				for key in self.m.floors:
 					pg.draw.rect(screen, (50, 50, 50), (key, self.m.floors[key][0] - self.camera['y'], self.m.floors[key][1], 600))
 				if self.m.dash['menu_selection'] == 0:
@@ -161,6 +163,7 @@ class View():
 					colors = ((120, 120, 120), (102, 202, 204))
 				if pg.font:
 				    big_font = pg.font.Font('range.ttf', 19)
+				    little_font = pg.font.Font('range.ttf', 12)
 				    title = big_font.render("New game starting in... " + (str(self.m.dash['multi_countdown'] / 50)), 1, (255, 255, 255))
 				    screen.blit(title, (96, 30))
 				    if self.m.dash['high_score'] != 0:
@@ -307,11 +310,12 @@ class MyHandler(Handler):
         pass
         
     def on_msg(self, msg):
-    	print(msg)
     	if 'news' in msg:
     		if msg['news'] == 'connected':
     			print('all satisfied')
     			self.m.dash['multi_status'] = 'connected'
+    	if 'num_rdy' in msg:
+    		self.m.dash['rdy'] = msg['num_rdy']
             
     def send_msg(self, txt):
         self.do_send({'txt': txt})
@@ -361,12 +365,12 @@ while model.dash['game_status']:
 				clock.tick(50)
 			elif model.dash['multi_status'] == 'ready':
 				c.process_input()
-				# c.move_floors()
 				c.move_player()
 				v.display_multi()
-				# c.turn_world()
 				n.update()
+				n.send_msg('rdy')
 				clock.tick(50)
+				print(model.dash['rdy'])
 		if model.dash['game_status'] == 'menu':
 			model.reset_menu()
 
