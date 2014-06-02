@@ -27,7 +27,7 @@ class Model():
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 900)}
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'multi', 'multi_status': self.dash['multi_status'], 'multi_timer': 0, 'multi_countdown': 750, 'rdy': 0, 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
+		self.dash = {'game_status': 'multi', 'multi_status': self.dash['multi_status'], 'multi_timer': 0, 'multi_countdown': 750, 'rdy': 0, 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0, 'current_top': 0, 'all_scores': []} # "dashboard" containing all stats
 		self.color = (255, 255, 255)
 class View():
 	def __init__(self, model):
@@ -212,8 +212,10 @@ class View():
 			if self.m.dash['frames_traveled'] >= 150:
 				if pg.font:
 					font = pg.font.Font('range.ttf', 12)
-					score = font.render("score: " + str(self.m.dash['current_score']), 50, (80, 80, 80))
-					screen.blit(score, (420, 10))
+					score = font.render("my score: " + str(self.m.dash['current_score']), 1, (80, 80, 80))
+					screen.blit(score, (360, 10))
+					current_top= font.render("current high score: " + self.m.dash['current_top'], 1, (80, 80, 80))
+					screen.blit(current_top, (20, 10))
 			pg.display.update()
 			self.m.dash['frames_traveled'] += 1
 			self.m.dash['current_score'] = (self.m.dash['frames_traveled'] - 100) / 150
@@ -371,11 +373,18 @@ class MyHandler(Handler):
     			self.m.dash['multi_status'] = 'connected'
     		if msg['news'] == 'START':
     			self.m.dash['multi_status'] = 'playing_multi'
-    	if 'num_rdy' in msg:
+    	elif 'num_rdy' in msg:
     		self.m.dash['rdy'] = msg['num_rdy']
+    	elif 'top_score' in msg:
+    		self.m.dash['current_top'] = msg['top_score']
+    	elif 'evryscr' in msg:
+    		print(msg)
             
     def send_msg(self, txt):
         self.do_send({'txt': txt})
+
+    def send_location(self):
+    	self.do_send({'crt': model.dash['current_score']})
         
     def update(self):
         poll(0.01)
@@ -438,9 +447,10 @@ while model.dash['game_status']:
 				c.process_input()
 				c.move_floors()
 				c.move_player()
-				v.display()
+				v.display_multi()
 				c.turn_world()
 				n.update()
+				n.send_location()
 				clock.tick(50)
 		if model.dash['game_status'] == 'menu':
 			model.reset_menu()
