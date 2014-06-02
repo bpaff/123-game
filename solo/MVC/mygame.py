@@ -152,9 +152,10 @@ class View():
 					self.camera['y'] = self.m.player['y'] - 30
 				screen = self.screen
 				screen.fill((32, 32, 32))
-				pg.draw.rect(screen, (100, 100, 100), (self.m.player['x'], self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
+				all_colors = [(255, 0, 0),(255, 127, 0), (255, 255, 0), (100, 150, 100), (0, 0, 255), (75, 0, 130), (143, 0, 255)]
+				pg.draw.rect(screen, all_colors[randint(0,6)], (self.m.player['x'], self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
 				for x in range(1, (self.m.dash['rdy'])):
-					pg.draw.rect(screen, (100, 150, 100), (((self.m.player['x'] + self.m.player['width'] + (x * self.m.player['width'])) + ((x - 1) * self.m.player['width'])), self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
+					pg.draw.rect(screen, (100, 100, 100), (((self.m.player['x'] + self.m.player['width'] + (x * self.m.player['width'])) + ((x - 1) * self.m.player['width'])), 90, self.m.player['width'], self.m.player['height']))
 				for key in self.m.floors:
 					pg.draw.rect(screen, (50, 50, 50), (key, self.m.floors[key][0] - self.camera['y'], self.m.floors[key][1], 600))
 				if self.m.dash['menu_selection'] == 0:
