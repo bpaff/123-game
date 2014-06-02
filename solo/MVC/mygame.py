@@ -27,7 +27,7 @@ class Model():
 		self.player = {'x': 60, 'y': 30, 'width': 7, 'height': 30}
 		self.floors = {0: (120, 900)}
 		self.motion = {'counter': 25, 'vel': 3, 'acc': 0.3}
-		self.dash = {'game_status': 'multi', 'multi_status': self.dash['multi_status'], 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
+		self.dash = {'game_status': 'multi', 'multi_status': self.dash['multi_status'], 'multi_timer': 0, 'multi_countdown': 30, 'jumping': False, 'jump_start': 0,  'jump_time': 0, 'falling': False, 'frames_traveled': 0, 'menu_selection': 0, 'high_score': self.dash['high_score'], 'current_score': 0} # "dashboard" containing all stats
 		self.color = (255, 255, 255)
 class View():
 	def __init__(self, model):
@@ -124,11 +124,46 @@ class View():
 
 	def display_multi(self):
 		if self.m.dash['multi_status'] == 'connected':
+			network_message = 'Now connected to the server!'
+		else:
+			network_message = 'Uh-oh... no server connection :('
+		
+		if self.m.dash['multi_status'] == 'connected':
+			if self.m.dash['multi_timer'] >= 0 and self.m.dash['multi_timer'] < 100:
+				screen = self.screen
+				screen.fill((32, 32, 32))
+				font = pg.font.Font('range.ttf', 19)
+				message = font.render(network_message, 1, (255, 255, 255))
+				screen.blit(message, (96, 66))
+				pg.display.update()
+				self.m.dash['multi_timer'] += 1
+			else:
+				self.m.dash['multi_status'] = 'ready'
+
+
+
+		if self.m.dash['multi_status'] == 'ready':
+			# am I dead?
+			if self.m.player['x'] + self.m.player['width'] < 0 or self.m.player['y'] > self.dims['y']:
+				self.m.reset_menu()
+			if self.m.player['y'] < 30:
+				self.camera['y'] = self.m.player['y'] - 30
 			screen = self.screen
 			screen.fill((32, 32, 32))
-			font = pg.font.Font('range.ttf', 19)
-			message = font.render("Now connected to Server!", 1, (255, 255, 255))
-			screen.blit(message, (96, 66))
+			pg.draw.rect(screen, (100, 100, 100), (self.m.player['x'], self.m.player['y'] - self.camera['y'], self.m.player['width'], self.m.player['height']))
+			for key in self.m.floors:
+				pg.draw.rect(screen, (50, 50, 50), (key, self.m.floors[key][0] - self.camera['y'], self.m.floors[key][1], 600))
+			if self.m.dash['menu_selection'] == 0:
+				colors = ((102, 202, 204), (120, 120, 120))
+			else:
+				colors = ((120, 120, 120), (102, 202, 204))
+			if pg.font:
+			    big_font = pg.font.Font('range.ttf', 26)
+			    title = big_font.render("New game starting in... ", 1, (255, 255, 255))
+			    screen.blit(title, (130, 40))
+			    if self.m.dash['high_score'] != 0:
+			    	score = little_font.render(("your best run... " + str(self.m.dash['high_score'])), 1, (90,90,90))
+			    	screen.blit(score, (353, 100))
 			pg.display.update()
 		
 class Controller():
@@ -171,12 +206,33 @@ class Controller():
 				self.m.dash['game_status'] = 'menu'
 
 		elif self.m.dash['game_status'] == 'multi':
-			for event in pg.event.get():
-				if event.type == pg.QUIT:
-					self.m.dash['game_status'] = 0
-			key = pg.key.get_pressed()
-			if key[pg.K_BACKSPACE]:
-				self.m.dash['game_status'] = 'menu'
+			if self.m.dash['multi_status'] == 'connected':
+				for event in pg.event.get():
+					if event.type == pg.QUIT:
+						self.m.dash['game_status'] = 0
+				key = pg.key.get_pressed()
+				if key[pg.K_BACKSPACE]:
+					self.m.dash['game_status'] = 'menu'
+			if self.m.dash['multi_status'] == 'ready':
+				self.m.dash['jumping'] = 0
+				for event in pg.event.get():
+					if event.type == pg.QUIT:
+						self.m.dash['game_status'] = 0 # 0 for game over, 1 for play
+				key = pg.key.get_pressed()
+				if key[pg.K_UP] or key[pg.K_SPACE]:
+					self.m.dash['jumping'] = 1
+				# elif key[pg.K_RIGHT]:
+				# 	self.m.dash['menu_selection'] = 1
+				# elif key[pg.K_LEFT]:
+				# 	self.m.dash['menu_selection'] = 0
+				elif key[pg.K_BACKSPACE]:
+					self.m.dash['game_status'] = 'menu'
+				# elif key[pg.K_RETURN]:
+				# 	if self.m.dash['menu_selection'] == 1:
+				# 		self.m.dash['game_status'] = 'multi'
+				# 	if self.m.dash['menu_selection'] == 0:
+				# 		self.m.dash['game_status'] = 'single'
+
 
 	def move_player(self):
 		if self.m.dash['falling']:
@@ -293,10 +349,21 @@ while model.dash['game_status']:
 		if model.dash['game_status'] == 'menu':
 			model.reset_menu()
 	if model.dash['game_status'] == 'multi':
-		c.process_input()
-		v.display_multi()
-		n.update()	
-		clock.tick(50)	
+		model.reset_multi()
+		while model.dash['game_status'] == 'multi':
+			if model.dash['multi_status'] == 'connected':
+				c.process_input()
+				v.display_multi()
+				n.update()	
+				clock.tick(50)
+			elif model.dash['multi_status'] == 'ready':
+				c.process_input()
+				# c.move_floors()
+				c.move_player()
+				v.display_multi()
+				# c.turn_world()
+				n.update()
+				clock.tick(50)
 		if model.dash['game_status'] == 'menu':
 			model.reset_menu()
 
